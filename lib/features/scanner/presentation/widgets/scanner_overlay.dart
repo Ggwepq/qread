@@ -11,59 +11,39 @@ class ScannerOverlay extends StatelessWidget {
 
     return Stack(
       children: [
-        // Dark background with cutout
-        ColorFiltered(
-          colorFilter: ColorFilter.mode(
-                Colors.black.withAlpha((0.5 * 255).toInt()),
-                BlendMode.srcOut,
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.transparent,
-                      backgroundBlendMode: BlendMode.dstOut,
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: scanAreaSize,
-                      height: scanAreaSize,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        // Semi-transparent background with cutout
+        CustomPaint(
+          size: size,
+          painter: ScannerOverlayPainter(
+            scanAreaSize: scanAreaSize,
+            borderRadius: 24,
+          ),
+        ),
+        // Scanning frame (Border)
+        Align(
+          alignment: Alignment.center,
+          child: Container(
+            width: scanAreaSize,
+            height: scanAreaSize,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white.withAlpha(150), width: 2),
+              borderRadius: BorderRadius.circular(24),
             ),
-            // Scanning frame
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: scanAreaSize,
-                height: scanAreaSize,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(duration: 2000.ms, color: Colors.deepPurpleAccent.withAlpha((0.5 * 255).toInt())),
-            ),
-            // Pulsing scanning line
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: scanAreaSize - 20,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.deepPurpleAccent.withAlpha((0.5 * 255).toInt()),
+          )
+              .animate(onPlay: (controller) => controller.repeat())
+              .shimmer(duration: 2000.ms, color: Colors.deepPurpleAccent.withAlpha(100)),
+        ),
+        // Pulsing scanning line
+        Align(
+          alignment: Alignment.center,
+          child: Container(
+            width: scanAreaSize - 20,
+            height: 2,
+            decoration: BoxDecoration(
+              color: Colors.deepPurpleAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.deepPurpleAccent.withAlpha(128),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -81,4 +61,46 @@ class ScannerOverlay extends StatelessWidget {
       ],
     );
   }
+}
+
+class ScannerOverlayPainter extends CustomPainter {
+  final double scanAreaSize;
+  final double borderRadius;
+
+  ScannerOverlayPainter({
+    required this.scanAreaSize,
+    required this.borderRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final backgroundPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    
+    final cutoutPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(size.width / 2, size.height / 2),
+            width: scanAreaSize,
+            height: scanAreaSize,
+          ),
+          Radius.circular(borderRadius),
+        ),
+      );
+
+    final path = Path.combine(
+      PathOperation.difference,
+      backgroundPath,
+      cutoutPath,
+    );
+
+    final paint = Paint()
+      ..color = Colors.black.withAlpha(160) // Semi-transparent black
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
