@@ -42,6 +42,8 @@ class ResultDialog extends StatelessWidget {
           if (result.type == QRType.wifi) ...[
             const SizedBox(height: 12),
             Text('Security: ${result.metadata?['T'] ?? 'None'}'),
+            if (result.metadata?['P'] != null && result.metadata!['P']!.isNotEmpty)
+              Text('Password: ${result.metadata!['P']}'),
           ],
         ],
       ),
