@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 import '../logic/scanner_controller.dart';
 import 'widgets/scanner_overlay.dart';
 import 'widgets/result_dialog.dart';
@@ -40,6 +41,21 @@ class _QRScannerViewState extends State<QRScannerView> {
     );
   }
 
+  Future<void> _scanFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    final bool found = await _scannerController.analyzeImage(image.path);
+
+    if (!found && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No QR code found in the selected image')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_onStateChange);
@@ -73,6 +89,10 @@ class _QRScannerViewState extends State<QRScannerView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.photo_library, color: Colors.white),
+            onPressed: _scanFromGallery,
+          ),
           IconButton(
             icon: ValueListenableBuilder(
               valueListenable: _scannerController.torchState,
