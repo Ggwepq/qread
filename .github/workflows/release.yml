@@ -21,19 +21,28 @@ jobs:
         with:
           fetch-depth: 0 # Fetches all tags so we can check if the version exists
 
-      # 1. Extract Version from PR Title
+      # 1. Extract Version from PR Title (Handles v1.0, V1.0.1, etc.)
       - name: Extract version
         id: get_version
         run: |
           TITLE="${{ github.event.pull_request.title }}"
-          VERSION=$(echo "$TITLE" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          
+          # Regex breakdown:
+          # [vV] matches 'v' or 'V'
+          # [0-9]+\.[0-9]+ matches the first two numbers (e.g., 1.0)
+          # (\.[0-9]+)? makes the third dot and number optional
+          VERSION=$(echo "$TITLE" | grep -oP '[vV][0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
           
           if [ -z "$VERSION" ]; then
-            echo "ERROR_MSG=No version pattern (e.g. v2.1.1) found in PR title." >> $GITHUB_ENV
+            echo "ERROR_MSG=No version pattern (e.g. v2.1 or V2.1.1) found in PR title." >> $GITHUB_ENV
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
           else
-            echo "VERSION=$VERSION" >> $GITHUB_ENV
+            # Normalize to lowercase 'v' for consistent tagging if desired, 
+            # or keep as extracted:
+            CLEAN_VERSION=$(echo "$VERSION" | tr 'A-Z' 'a-z')
+            echo "VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
             echo "SKIP_RELEASE=false" >> $GITHUB_ENV
+            echo "Found version: $CLEAN_VERSION"
           fi
 
       # 2. Check if Tag Already Exists
